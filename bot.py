@@ -591,7 +591,9 @@ def get_local_ip():
         s.connect(("8.8.8.8", 80)); ip = s.getsockname()[0]; s.close(); return ip
     except Exception: return "127.0.0.1"
 
-PORT = 5050
+import os
+
+PORT = int(os.environ.get("PORT", 5050))
 
 def run_flask():
     app.run(host="0.0.0.0", port=PORT, debug=False, use_reloader=False)
@@ -611,22 +613,28 @@ def main():
     print(f"Dashboard → http://localhost:{PORT}  |  LAN: http://{ip}:{PORT}")
     print("Ctrl+C to stop.\n")
     try:
-            if result.get("ok"):
-                for update in result.get("result", []):
-                    update_id = update.get("update_id")
-                    offset = update_id + 1
-                    if "message" in update:
-                        msg = update["message"]
-                        print(msg.get("chat", {}))
-                        from_id = msg.get("from", {}).get("id")
-                        if from_id: process_message(msg, from_id)
-                    if "callback_query" in update:
-                        cb = update["callback_query"]
-                        from_id = cb.get("from", {}).get("id")
-                        if from_id:
-                            process_callback(cb.get("data", ""), from_id, cb.get("id"), cb.get("message", {}))
-            validate_entries()
-            time.sleep(2)
+    while True:
+        result = get_updates()
+
+        if result.get("ok"):
+            for update in result.get("result", []):
+                update_id = update.get("update_id")
+                offset = update_id + 1
+
+                if "message" in update:
+                    msg = update["message"]
+                    from_id = msg.get("from", {}).get("id")
+                    if from_id:
+                        process_message(msg, from_id)
+
+                if "callback_query" in update:
+                    cb = update["callback_query"]
+                    from_id = cb.get("from", {}).get("id")
+                    if from_id:
+                        process_callback(cb.get("data", ""), from_id, cb.get("id"), cb.get("message", {}))
+
+        validate_entries()
+        time.sleep(2)
     except KeyboardInterrupt:
         print("\nBot stopped.")
     except Exception as e:
