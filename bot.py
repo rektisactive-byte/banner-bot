@@ -599,7 +599,7 @@ def run_flask():
     app.run(host="0.0.0.0", port=PORT, debug=False, use_reloader=False)
 
 def get_updates():
-    global offset@
+    global offset
     return _api("getUpdates", {"offset": offset, "timeout": POLLING_TIMEOUT})
 
 def main():
