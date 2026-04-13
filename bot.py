@@ -602,43 +602,7 @@ def get_updates():
     global offset
     return _api("getUpdates", {"offset": offset, "timeout": POLLING_TIMEOUT})
 
-def main():
-    global offset
-    load_data(); load_tg_config()
-    flask_thread = threading.Thread(target=run_flask, daemon=True)
-    flask_thread.start()
-    ip = get_local_ip()
-    logger.info("Bot started.")
-    print(f"Banner bot running — trigger: reply + {BOT_USERNAME}")
-    print(f"Dashboard → http://localhost:{PORT}  |  LAN: http://{ip}:{PORT}")
-    print("Ctrl+C to stop.\n")
-    try:
-        while True:
-        result = get_updates()
 
-        if result.get("ok"):
-            for update in result.get("result", []):
-                update_id = update.get("update_id")
-                offset = update_id + 1
-
-                if "message" in update:
-                    msg = update["message"]
-                    from_id = msg.get("from", {}).get("id")
-                    if from_id:
-                        process_message(msg, from_id)
-
-                if "callback_query" in update:
-                    cb = update["callback_query"]
-                    from_id = cb.get("from", {}).get("id")
-                    if from_id:
-                        process_callback(cb.get("data", ""), from_id, cb.get("id"), cb.get("message", {}))
-
-        validate_entries()
-        time.sleep(2)
-    except KeyboardInterrupt:
-        print("\nBot stopped.")
-    except Exception as e:
-        logger.error(f"Fatal: {e}", exc_info=True)
 
 if __name__ == "__main__":
     run_flask()
