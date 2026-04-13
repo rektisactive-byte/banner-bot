@@ -288,6 +288,15 @@ def process_message(message, from_user_id):
     if not _is_triggered(message):
         return
 
+    import random
+    import time
+
+    def send_typing(chat_id):
+        _api("sendChatAction", {
+            "chat_id": chat_id,
+            "action": "typing"
+        })
+
     # =========================
     # CONTEXT
     # =========================
@@ -297,27 +306,77 @@ def process_message(message, from_user_id):
     original_msg_id = original.get("message_id")
 
     # =========================
-    # ✅ SEND OK IN SAME GROUP + TOPIC
+    # 🔥 PREMIUM UX START
     # =========================
-    payload = {
-        "chat_id": chat_id,
-        "text": "OK👀!"
-    }
 
-    if original_msg_id:
-        payload["reply_to_message_id"] = original_msg_id
+    intros = [
+        "👀 Checking boy",
+        "🧠 Analyzing request",
+        "📂 Opening file",
+        "🚀 Initiating process",
+        "🔍 Running scan"
+    ]
 
-    if topic_id:
-        payload["message_thread_id"] = topic_id
+    phases = [
+        ["Checking", "Validating", "Finalizing"],
+        ["Reading", "Processing", "Completing"],
+        ["Scanning", "Analyzing", "Saving"],
+        ["Inspecting", "Working", "Finishing"]
+    ]
 
-    result = _api("sendMessage", payload)
+    success_msgs = [
+        "✅ Done",
+        "🎯 Completed",
+        "🚀 Success",
+        "🔥 All good"
+    ]
 
-    # 🔥 fallback (still stays in group)
-    if not result.get("ok"):
-        print("SEND FAILED:", result)
-        payload.pop("reply_to_message_id", None)
-        result = _api("sendMessage", payload)
-        print("RETRY RESULT:", result)
+    intro = random.choice(intros)
+    flow = random.choice(phases)
+    done = random.choice(success_msgs)
+
+    def dots(text, n):
+        return text + "." * n
+
+    # Step 1
+    send_typing(chat_id)
+    time.sleep(0.5)
+
+    msg_id = send_message(chat_id, intro + "...", topic_id=topic_id)
+
+    # Step 2
+    for i in range(1, 3):
+        send_typing(chat_id)
+        time.sleep(0.4)
+        edit_message(chat_id, msg_id, intro + "...\n\n1️⃣ " + dots(flow[0], i))
+
+    # Step 3
+    for i in range(1, 3):
+        send_typing(chat_id)
+        time.sleep(0.4)
+        edit_message(chat_id, msg_id,
+            intro + "...\n\n1️⃣ " + flow[0] + "...\n2️⃣ " + dots(flow[1], i)
+        )
+
+    # Step 4
+    for i in range(1, 2):
+        send_typing(chat_id)
+        time.sleep(0.4)
+        edit_message(chat_id, msg_id,
+            intro + "...\n\n1️⃣ " + flow[0] + "...\n2️⃣ " + flow[1] + "...\n3️⃣ " + dots(flow[2], i)
+        )
+
+    # Final
+    send_typing(chat_id)
+    time.sleep(0.4)
+
+    edit_message(chat_id, msg_id,
+        intro + "...\n\n"
+        "1️⃣ " + flow[0] + "...\n"
+        "2️⃣ " + flow[1] + "...\n"
+        "3️⃣ " + flow[2] + "...\n\n"
+        + done + " 🚀"
+    )
 
     # =========================
     # FILE DETECTION
@@ -380,7 +439,7 @@ def process_message(message, from_user_id):
         send_message(
             chat_id,
             f"<b>Unknown brand</b>  —  <code>{brand}</code>\n\nSupported: {', '.join(sorted(CONTROLLED_BRANDS.keys()))}",
-             topic_id=topic_id
+            topic_id=topic_id
         )
         return
 
@@ -413,11 +472,10 @@ def process_message(message, from_user_id):
             topic_id=topic_id
         )
 
-        logger.info(f"Duplicate DM: {brand} | {promo} [{short_id}]")
         return
 
     # =========================
-    # FORWARD TO ARCHIVE
+    # FORWARD
     # =========================
     _forward(
         orig_chat_id,
@@ -433,7 +491,6 @@ def process_message(message, from_user_id):
         file_id=file_id,
         action_label="SAVED"
     )
-
 def _forward(original_chat_id, original_msg_id, brand, promo,
              archive_group_id, topic_id, from_user_id,
              version, is_image=False, file_type="other", file_id="", action_label="SAVED"):
@@ -487,6 +544,9 @@ app = Flask(__name__, static_folder=DASHBOARD_DIR)
 
 @app.route("/")
 def index():
+    key = request.args.get("key")
+    if key != "98419841":
+        return "Forbidden", 403
     return send_from_directory(DASHBOARD_DIR, "BannerTracker.html")
 
 @app.route("/data")
