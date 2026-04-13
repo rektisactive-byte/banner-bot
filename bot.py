@@ -548,7 +548,7 @@ def api_save_tg_config():
 
 @app.route("/webhook/<secret>", methods=["POST"])
 def webhook(secret):
-    if secret != "MY_SECRET_KEY":
+    if secret != "x9KpppLmQ7z":
         return "Forbidden", 403
 
     data = request.get_json()
