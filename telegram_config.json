@@ -1,0 +1,37 @@
+{
+  "sending_groups": [
+    {
+      "id": "default",
+      "name": "Main Archive",
+      "group_id": -1003892418830,
+      "topics": {
+        "crickex": 7,
+        "mostplay": 64,
+        "darazplay": 50,
+        "kv8": 42,
+        "sbj66": 66,
+        "superbaji": 68,
+        "jeetway": 58,
+        "heybaji": 54,
+        "betjili": 9,
+        "betvisa": 123,
+        "jeetwin": 60,
+        "betjdb": 48,
+        "jeetbangla": 56,
+        "heyvip": 46,
+        "luckyworld": 62,
+        "123ga": 44
+      },
+      "active": true
+    }
+  ],
+  "receiving_groups": [
+    {
+      "id": "tracker",
+      "name": "Tracker",
+      "group_id": -1001234567890,
+      "topic_id": 1,
+      "active": true
+    }
+  ]
+}

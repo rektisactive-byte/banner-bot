@@ -1,0 +1,2122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Banner Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg:         #070712;
+  --bg2:        #0a0a16;
+  --surface:    rgba(15, 15, 30, 0.75);
+  --surface-2:  #151528;
+  --surface-3:  #1a1a30;
+  --border:     #1e1e38;
+  --border-lo:  #15152a;
+  --border-hi:  #2a2a50;
+  --text-1:     #cfcfe8;
+  --text-2:     #8b8bb5;
+  --text-3:     #383858;
+  --accent:     #7c3aed;
+  --accent-dim: rgba(124,58,237,.12);
+  --accent-glow:rgba(124,58,237,.35);
+  --green:      #10b981;
+  --green-bg:   rgba(16,185,129,.1);
+  --red:        #ef4444;
+  --red-bg:     rgba(239,68,68,.1);
+  --amber:      #f59e0b;
+  --amber-bg:   rgba(245,158,11,.1);
+  --blue:       #3b82f6;
+  --blue-bg:    rgba(59,130,246,.1);
+  --mono:       'IBM Plex Mono', monospace;
+  --r:          7px;
+  --rl:         11px;
+  --sidebar-w:  248px;
+  --sh:         0 0 0 1px var(--border), 0 8px 32px rgba(0,0,0,.4);
+}
+
+html { font-size: 14px; scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  letter-spacing: -0.01em;
+  background: var(--bg);
+  color: var(--text-1);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* PATCH: lighter overlay, wallpaper-visible */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(5,5,12,0.52), rgba(5,5,12,0.62));
+}
+
+/* PATCH: remove noise overlay */
+body::after { display: none; }
+
+#particles {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.9;
+  filter: drop-shadow(0 0 6px rgba(255,255,255,0.4));
+}
+body.no-wallpaper::before,
+body.no-wallpaper::after {
+  display: none;
+}
+
+.app {
+  display: flex;
+  min-height: 100vh;
+  position: relative;
+  z-index: auto;
+}
+
+.main {
+  margin-left: var(--sidebar-w);
+  flex: 1;
+  min-height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+.main::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(800px 400px at 50% 0%, rgba(124,58,237,.08), transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* PATCH: sidebar glass */
+.sidebar {
+  width: var(--sidebar-w);
+  min-height: 100vh;
+  background: rgba(8,8,20,0.48);
+  border-right: 1px solid rgba(255,255,255,0.05);
+  display: flex; flex-direction: column;
+  position: fixed; left: 0; top: 0; bottom: 0;
+  z-index: 100;
+  transition: transform .22s cubic-bezier(.4,0,.2,1);
+  flex-shrink: 0;
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+}
+
+.sidebar-head {
+  padding: 20px 16px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  display: flex; align-items: center; gap: 10px;
+}
+.sb-logo {
+  width: 30px; height: 30px; border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent) 0%, #4f46e5 100%);
+  display: grid; place-items: center; flex-shrink: 0;
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+.sb-logo svg { width: 15px; height: 15px; color: #fff; }
+.sb-title { font-size: .82rem; font-weight: 600; letter-spacing: -.02em; color: var(--text-1); }
+.sb-sub   { font-size: .65rem; color: var(--text-3); margin-top: 1px; }
+
+.sidebar-nav {
+  padding: 12px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.sb-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 10px; border-radius: 7px;
+  font-size: .78rem; font-weight: 500; color: var(--text-2);
+  cursor: pointer; user-select: none;
+  transition: all .12s; margin-bottom: 2px;
+  border: none; background: none; width: 100%; text-align: left;
+}
+.sb-item:hover { background: var(--surface-2); color: var(--text-1); }
+.sb-item.active {
+  background: linear-gradient(90deg, rgba(124,58,237,.2), transparent);
+  color: var(--text-1);
+  border-left: 2px solid var(--accent);
+}
+.sb-item svg { width: 15px; height: 15px; flex-shrink: 0; }
+.sb-item .sb-badge {
+  margin-left: auto;
+  font-size: .6rem; font-weight: 600;
+  background: var(--accent-dim); color: var(--accent);
+  border: 1px solid var(--accent-glow); border-radius: 3px;
+  padding: 1px 5px;
+}
+
+.sidebar-section {
+  padding: 14px 10px 8px;
+  flex: 1; overflow-y: auto; overflow-x: hidden;
+}
+.sidebar-section::-webkit-scrollbar { width: 3px; }
+.sidebar-section::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 2px; }
+
+.sb-lbl {
+  font-size: .58rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .1em; color: var(--text-3);
+  padding: 0 8px; margin-bottom: 7px; display: block;
+}
+
+.sb-filter {
+  display: flex; align-items: center; gap: 7px;
+  padding: 6px 10px; border-radius: 6px;
+  font-size: .75rem; font-weight: 500; color: var(--text-2);
+  cursor: pointer; user-select: none; margin-bottom: 2px;
+  border: none; background: none; width: 100%; text-align: left;
+  transition: all .12s;
+}
+.sb-filter:hover { background: var(--surface-2); color: var(--text-1); }
+.sb-filter.on { background: var(--surface-3); color: var(--text-1); }
+.sb-filter .dot { flex-shrink: 0; }
+.sb-filter .sb-count {
+  margin-left: auto; font-family: var(--mono); font-size: .62rem;
+  color: var(--text-3);
+}
+
+.sidebar-footer {
+  padding: 12px 10px;
+  border-top: 1px solid rgba(255,255,255,0.04);
+}
+.sb-pulse-row {
+  display: flex; align-items: center; gap: 7px;
+  font-size: .7rem; color: var(--text-3);
+}
+.pulse {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+  animation: blink 2.4s ease infinite;
+}
+@keyframes blink { 0%,100%{opacity:1;} 50%{opacity:.2;} }
+
+.sb-toggle {
+  display: none;
+  position: fixed; top: 12px; left: 12px; z-index: 200;
+  width: 36px; height: 36px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); cursor: pointer;
+  align-items: center; justify-content: center;
+  box-shadow: var(--sh);
+}
+.sb-toggle svg { width: 16px; height: 16px; color: var(--text-2); }
+
+.sb-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.6); z-index: 99;
+  backdrop-filter: blur(2px);
+}
+.sb-overlay.show { display: block; }
+
+.main {
+  margin-left: var(--sidebar-w);
+  flex: 1; min-height: 100vh;
+  display: flex; flex-direction: column;
+}
+
+.wrap {
+  max-width: 1180px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 28px 140px;
+}
+
+.view { display: none; }
+.view.active { display: block; }
+
+.page-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 28px 0 22px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+.page-title { font-size: 1.05rem; font-weight: 600; letter-spacing: -.025em; }
+.page-sub   { font-size: .72rem; color: var(--text-3); margin-top: 2px; }
+
+.hdr-actions { display: flex; align-items: center; gap: 8px; }
+
+.btn-ghost {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  background: var(--surface-2);
+  font-family: inherit; font-size: .72rem; font-weight: 500;
+  color: var(--text-2); cursor: pointer;
+  transition: all .15s ease;
+}
+.btn-ghost:hover { color: var(--text-1); border-color: var(--border-hi); background: var(--surface-3); transform: translateY(-1px); }
+.btn-ghost svg { width: 12px; height: 12px; }
+
+.btn-accent {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 12px;
+  border: 1px solid var(--accent-glow);
+  border-radius: var(--r);
+  background: var(--accent-dim);
+  font-family: inherit; font-size: .72rem; font-weight: 500;
+  color: #a78bfa; cursor: pointer;
+  transition: all .15s ease;
+}
+.btn-accent:hover { background: rgba(124,58,237,.2); color: #c4b5fd; transform: translateY(-1px); }
+.btn-accent svg { width: 12px; height: 12px; }
+
+.stats {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  gap: 10px; margin-bottom: 22px;
+}
+/* PATCH: stat glass */
+.stat {
+  background: rgba(12,12,26,0.52);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--rl);
+  padding: 18px 20px;
+  animation: fadeUp .25s ease both;
+  transition: border-color .15s, transform .15s;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+}
+.stat:hover { border-color: rgba(255,255,255,0.1); transform: translateY(-1px); }
+.stat:nth-child(2) { animation-delay: .05s; }
+.stat:nth-child(3) { animation-delay: .1s; }
+
+.stat-lbl {
+  display: flex; align-items: center; gap: 5px;
+  font-size: .6rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .1em; color: var(--text-3); margin-bottom: 10px;
+}
+.stat-lbl svg { width: 10px; height: 10px; }
+.stat-n {
+  font-size: 2rem; font-weight: 600;
+  letter-spacing: -.05em; line-height: 1;
+  background: linear-gradient(135deg, var(--text-1) 0%, var(--text-2) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.stat-sub { font-size: .67rem; color: var(--text-3); margin-top: 6px; }
+
+.toolbar {
+  display: flex; align-items: center; gap: 6px;
+  flex-wrap: wrap; margin-bottom: 12px;
+}
+.toolbar-lbl {
+  font-size: .6rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .1em; color: var(--text-3);
+}
+.pill {
+  padding: 4px 11px; border-radius: 100px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  font-family: inherit; font-size: .71rem; font-weight: 500;
+  color: var(--text-2); cursor: pointer; transition: all .11s;
+}
+.pill:hover { border-color: var(--border-hi); color: var(--text-1); }
+.pill.on {
+  background: var(--accent-dim); color: #a78bfa;
+  border-color: var(--accent-glow);
+}
+.sep { width: 1px; height: 16px; background: var(--border); margin: 0 2px; }
+.sp  { flex: 1; }
+
+.search-wrap { position: relative; display: flex; align-items: center; }
+.search-wrap svg { position: absolute; left: 9px; width: 12px; height: 12px; color: var(--text-3); pointer-events: none; }
+#search {
+  padding: 5px 12px 5px 28px;
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  background: var(--surface-2);
+  font-family: inherit; font-size: .72rem;
+  color: var(--text-1); width: 190px;
+  outline: none; transition: border-color .12s, background .12s;
+}
+#search::placeholder { color: var(--text-3); }
+#search:focus {
+  border-color: var(--accent-glow);
+  box-shadow: 0 0 0 1px rgba(124,58,237,.35);
+  background: var(--surface-3);
+}
+
+/* PATCH: card glass */
+.card {
+  background: rgba(12,12,26,0.55);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--rl);
+  overflow: hidden;
+  animation: fadeUp .28s ease .08s both;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.03),
+    0 20px 60px rgba(0,0,0,0.4),
+    inset 0 0 40px rgba(124,58,237,0.04);
+}
+
+table { width: 100%; border-collapse: collapse; }
+thead { position: sticky; top: 0; z-index: 10; }
+thead th {
+  padding: 10px 14px;
+  text-align: left;
+  font-size: .59rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .1em; color: var(--text-3);
+  background: rgba(6,6,16,0.85);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap; cursor: pointer; user-select: none;
+}
+thead th:hover { color: var(--text-2); }
+.si { margin-left: 3px; opacity: .3; font-size: .55rem; }
+
+.gr {
+  border-bottom: 1px solid var(--border-lo);
+  cursor: pointer; transition: background .1s, transform .12s;
+}
+.gr:hover { background: var(--surface-2); transform: scale(1.002); box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
+.gr:last-child { border-bottom: none; }
+.gr.fresh > td:first-child + td { border-left: 2px solid var(--green); padding-left: 12px; }
+.gr.dead  > td:first-child + td { border-left: 2px solid var(--red); padding-left: 12px; }
+.gr.dead { opacity: .45; }
+
+td { padding: 11px 14px; font-size: .79rem; vertical-align: middle; }
+
+.xc { width: 24px; padding-right: 0 !important; }
+.chev {
+  display: flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 4px; color: var(--text-3);
+}
+.chev svg { width: 10px; height: 10px; transition: transform .2s cubic-bezier(.4,0,.2,1); }
+.gr:hover .chev { color: var(--text-2); background: var(--surface-3); }
+.gr.open .chev svg { transform: rotate(90deg); }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: var(--surface-3); border: 1px solid var(--border);
+  border-radius: 5px; padding: 2px 8px 2px 5px;
+  font-size: .62rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .05em; color: var(--text-2);
+}
+.dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+
+.pname { font-weight: 500; color: var(--text-1); }
+.ver {
+  font-family: var(--mono); font-size: .65rem; font-weight: 500;
+  color: var(--text-3); background: var(--surface-3);
+  border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px;
+}
+.tv { font-size: .73rem; color: var(--text-2); }
+.tv.fresh-t { color: var(--green); font-weight: 500; }
+.tv.dead-t  { color: var(--red); }
+.uv { font-size: .73rem; color: var(--text-2); }
+.uv::before { content: '@'; color: var(--text-3); }
+
+.tag {
+  font-size: .6rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em;
+  border-radius: 3px; padding: 1px 6px;
+}
+.del-tag { color: var(--red);   background: var(--red-bg);   border: 1px solid rgba(239,68,68,.25); }
+.rep-tag { color: var(--text-3); background: var(--surface-3); border: 1px solid var(--border); }
+
+.file-badge {
+  display: inline-flex; align-items: center;
+  font-size: .62rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .05em; padding: 2px 7px; border-radius: 4px;
+  border: 1px solid var(--border); background: var(--surface-3); color: var(--text-3);
+}
+.file-badge.image    { background: var(--green-bg);  border-color: rgba(16,185,129,.25);  color: var(--green); }
+.file-badge.video    { background: var(--amber-bg);  border-color: rgba(245,158,11,.25);  color: var(--amber); }
+.file-badge.audio    { background: rgba(139,92,246,.1); border-color: rgba(139,92,246,.25); color: #a78bfa; }
+.file-badge.document { background: var(--blue-bg);   border-color: rgba(59,130,246,.25);  color: var(--blue); }
+.file-badge.other    { background: var(--surface-3); border-color: var(--border); color: var(--text-3); }
+
+.prev-wrap {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 42px; height: 42px; border-radius: 7px;
+  overflow: hidden; border: 1px solid var(--border);
+  background: var(--surface-3); flex-shrink: 0;
+  text-decoration: none; transition: border-color .12s;
+}
+.prev-wrap:hover { border-color: var(--border-hi); }
+.prev-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.prev-wrap.img { border-color: rgba(16,185,129,.3); background: var(--green-bg); }
+.prev-wrap svg { width: 15px; height: 15px; color: var(--text-3); }
+
+.acts { display: flex; align-items: center; gap: 4px; }
+.a-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; position: relative;
+  border: 1px solid var(--border); border-radius: 6px;
+  background: var(--surface-2); color: var(--text-2);
+  font-family: inherit; cursor: pointer;
+  transition: all .11s; text-decoration: none; flex-shrink: 0;
+}
+.a-btn svg { width: 12px; height: 12px; }
+.a-btn:hover { border-color: var(--border-hi); color: var(--text-1); background: var(--surface-3); }
+.a-btn.danger:hover { color: var(--red); border-color: rgba(239,68,68,.3); background: var(--red-bg); }
+.a-btn.dl:hover { color: var(--green); border-color: rgba(16,185,129,.3); background: var(--green-bg); }
+
+[data-tip] { position: relative; }
+[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+  background: var(--surface-3); border: 1px solid var(--border-hi);
+  color: var(--text-1); font-size: .62rem; font-weight: 500;
+  padding: 3px 7px; border-radius: 5px; white-space: nowrap;
+  pointer-events: none; opacity: 0; transition: opacity .12s;
+  z-index: 50;
+}
+[data-tip]:hover::after { opacity: 1; }
+
+.hs { display: none; }
+.hs.open { display: table-row-group; }
+.hs.open .hr { animation: rowIn .18s ease both; }
+.hs.open .hr:nth-child(2) { animation-delay: .03s; }
+.hs.open .hr:nth-child(3) { animation-delay: .06s; }
+.hs.open .hr:nth-child(4) { animation-delay: .09s; }
+.hs.open .hr:nth-child(5) { animation-delay: .12s; }
+
+@keyframes rowIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to   { opacity: 1; transform: none; }
+}
+.hr.row-out { animation: rowOut .15s ease both !important; }
+@keyframes rowOut {
+  from { opacity: 1; transform: none; }
+  to   { opacity: 0; transform: translateY(-5px); }
+}
+
+.hr {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border-lo);
+}
+.hr:last-child { border-bottom: 1px solid var(--border); }
+.hr td { padding: 8px 14px; }
+
+.h-indent {
+  display: flex; align-items: center; gap: 7px;
+  padding-left: 14px;
+}
+.h-indent::before {
+  content: ''; display: block; width: 1px; height: 12px;
+  background: var(--border-hi); flex-shrink: 0;
+}
+
+.empty {
+  padding: 54px 20px; text-align: center;
+  color: var(--text-3); font-size: .78rem;
+}
+.empty svg { width: 30px; height: 30px; margin-bottom: 10px; opacity: .2; }
+.empty code { font-family: var(--mono); font-size: .7rem; background: var(--surface-3); padding: 1px 5px; border-radius: 3px; }
+
+footer {
+  margin-top: 24px; padding-top: 16px;
+  border-top: 1px solid var(--border);
+  display: flex; justify-content: space-between;
+  font-size: .67rem; color: var(--text-3);
+}
+#ec { font-family: var(--mono); }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+#lb {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.88); z-index: 1000;
+  align-items: center; justify-content: center;
+  backdrop-filter: blur(8px);
+}
+#lb.show { display: flex; animation: fadeIn .15s ease; }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+#lb img {
+  max-width: 90vw; max-height: 88vh;
+  border-radius: var(--rl); box-shadow: 0 30px 80px rgba(0,0,0,.7);
+  border: 1px solid var(--border-hi);
+}
+#lb-close {
+  position: absolute; top: 18px; right: 22px;
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface-2); border: 1px solid var(--border-hi);
+  border-radius: 8px; color: var(--text-2); cursor: pointer;
+  transition: all .12s;
+}
+#lb-close:hover { background: var(--surface-3); color: var(--text-1); }
+#lb-close svg { width: 14px; height: 14px; }
+
+#modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.7); z-index: 900;
+  align-items: center; justify-content: center;
+  backdrop-filter: blur(4px);
+}
+#modal-overlay.show { display: flex; animation: fadeIn .15s ease; }
+
+/* PATCH: modal glass */
+.modal {
+  background: rgba(10,10,22,0.82);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px; padding: 28px 28px 22px;
+  width: 360px; box-shadow: 0 24px 64px rgba(0,0,0,.55);
+  animation: modalUp .18s ease;
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+}
+@keyframes modalUp {
+  from { opacity: 0; transform: translateY(10px) scale(.97); }
+  to   { opacity: 1; transform: none; }
+}
+.modal-icon {
+  width: 42px; height: 42px; border-radius: 10px;
+  background: var(--red-bg); border: 1px solid rgba(239,68,68,.25);
+  display: grid; place-items: center; margin-bottom: 16px;
+}
+.modal-icon svg { width: 18px; height: 18px; color: var(--red); }
+.modal h3 { font-size: .95rem; font-weight: 600; margin-bottom: 8px; }
+.modal p  { font-size: .78rem; color: var(--text-2); line-height: 1.5; }
+.modal-btns {
+  display: flex; gap: 8px; justify-content: flex-end;
+  margin-top: 22px;
+}
+.modal-btns button {
+  padding: 7px 16px; border-radius: 7px;
+  font-family: inherit; font-size: .75rem; font-weight: 500;
+  cursor: pointer; transition: all .12s;
+}
+.btn-cancel {
+  background: var(--surface-2); border: 1px solid var(--border);
+  color: var(--text-2);
+}
+.btn-cancel:hover { color: var(--text-1); border-color: var(--border-hi); }
+.btn-confirm-del {
+  background: var(--red-bg); border: 1px solid rgba(239,68,68,.3);
+  color: var(--red);
+}
+.btn-confirm-del:hover { background: rgba(239,68,68,.2); }
+
+/* ─── TELEGRAM MANAGER ─── */
+.tg-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  margin-bottom: 20px;
+}
+
+/* PATCH: tg-panel glass */
+.tg-panel {
+  background: rgba(12,12,26,0.52);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--rl);
+  overflow: hidden;
+  animation: fadeUp .25s ease both;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.tg-panel:nth-child(2) { animation-delay: .06s; }
+
+/* PATCH: tg-full-panel glass */
+.tg-full-panel {
+  background: rgba(12,12,26,0.52);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--rl);
+  overflow: hidden;
+  animation: fadeUp .3s ease .1s both;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* PATCH: tg-panel-head darker */
+.tg-panel-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 18px; border-bottom: 1px solid rgba(255,255,255,0.05);
+  background: rgba(6,6,16,0.5);
+}
+.tg-panel-title {
+  display: flex; align-items: center; gap: 8px;
+  font-size: .8rem; font-weight: 600;
+}
+.tg-panel-title svg { width: 14px; height: 14px; color: var(--text-3); }
+.tg-panel-body { padding: 16px 18px; }
+
+/* PATCH: tg-group-item improved hover */
+.tg-group-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.05);
+  background: rgba(20,20,40,0.45);
+  margin-bottom: 8px; transition: border-color .12s, transform .12s;
+}
+.tg-group-item:hover { border-color: rgba(255,255,255,0.1); transform: translateY(-1px); }
+.tg-group-item.inactive { opacity: .45; }
+
+.tg-group-info { flex: 1; min-width: 0; }
+.tg-group-name { font-size: .78rem; font-weight: 500; }
+.tg-group-id   { font-family: var(--mono); font-size: .65rem; color: var(--text-3); margin-top: 2px; word-break: break-all; }
+
+.tg-group-actions { display: flex; align-items: center; gap: 5px; }
+
+.toggle-sw { position: relative; display: inline-block; width: 34px; height: 18px; }
+.toggle-sw input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute; cursor: pointer; inset: 0;
+  background: var(--surface-3); border: 1px solid var(--border-hi);
+  border-radius: 9px; transition: .15s;
+}
+.toggle-slider::before {
+  content: ''; position: absolute; width: 12px; height: 12px;
+  left: 2px; bottom: 2px; background: var(--text-3);
+  border-radius: 50%; transition: .15s;
+}
+input:checked + .toggle-slider { background: rgba(16,185,129,.2); border-color: rgba(16,185,129,.4); }
+input:checked + .toggle-slider::before { transform: translateX(16px); background: var(--green); }
+
+.topics-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+.topics-table th {
+  font-size: .6rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--text-3); padding: 6px 8px;
+  border-bottom: 1px solid var(--border); text-align: left;
+}
+.topics-table td { padding: 7px 8px; font-size: .75rem; border-bottom: 1px solid var(--border-lo); }
+.topics-table tr:last-child td { border-bottom: none; }
+.topics-table tr:hover td { background: var(--surface-2); }
+.topics-table .topic-id { font-family: var(--mono); font-size: .68rem; color: var(--text-3); }
+
+.form-group { margin-bottom: 14px; }
+.form-label { display: block; font-size: .68rem; font-weight: 500; color: var(--text-2); margin-bottom: 5px; }
+.form-input {
+  width: 100%; padding: 8px 12px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--r); color: var(--text-1);
+  font-family: inherit; font-size: .78rem; outline: none;
+  transition: border-color .12s;
+}
+.form-input:focus { border-color: var(--border-hi); background: var(--surface-3); }
+.form-input::placeholder { color: var(--text-3); }
+.form-row { display: flex; gap: 8px; }
+.form-row .form-group { flex: 1; }
+
+.test-result {
+  margin-top: 10px; padding: 8px 12px; border-radius: 6px;
+  font-size: .72rem; display: none;
+}
+.test-result.ok  { background: var(--green-bg); border: 1px solid rgba(16,185,129,.25); color: var(--green); }
+.test-result.err { background: var(--red-bg);   border: 1px solid rgba(239,68,68,.25);  color: var(--red); }
+
+.add-form {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--rl); padding: 16px; margin-top: 12px;
+  display: none;
+}
+.add-form.show { display: block; animation: fadeUp .15s ease; }
+.add-form-title { font-size: .75rem; font-weight: 600; margin-bottom: 14px; }
+
+/* NEW: Priority UI */
+.tg-priority-col {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 3px; margin-right: 8px; flex-shrink: 0;
+}
+.priority-badge {
+  font-family: var(--mono); font-size: .58rem; font-weight: 700;
+  color: var(--accent); background: var(--accent-dim);
+  border: 1px solid var(--accent-glow); border-radius: 4px; padding: 1px 5px;
+}
+.priority-btns { display: flex; flex-direction: column; gap: 1px; }
+.prio-btn {
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 3px; color: var(--text-3); font-size: .5rem;
+  line-height: 1; padding: 2px 5px; cursor: pointer; transition: all .1s;
+}
+.prio-btn:hover:not([disabled]) { color: var(--text-1); border-color: var(--border-hi); background: var(--surface-3); }
+.prio-btn[disabled] { opacity: .2; cursor: not-allowed; }
+
+/* NEW: Field error */
+.field-error { font-size: .68rem; color: var(--red); margin-top: 4px; line-height: 1.3; }
+
+/* NEW: Save status */
+#save-status { font-size: .67rem; transition: color .25s; min-width: 70px; text-align: right; }
+
+@media (max-width: 860px) {
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+  .main { margin-left: 0; }
+  .sb-toggle { display: flex; }
+  .wrap { padding: 0 14px 60px; }
+  .stats { grid-template-columns: 1fr 1fr; }
+  .stat:last-child { grid-column: span 2; }
+  td:nth-child(6), th:nth-child(6) { display: none; }
+  #search { width: 130px; }
+  .tg-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<canvas id="particles"></canvas>
+
+<button class="sb-toggle" onclick="toggleSidebar()">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+    <line x1="3" y1="6" x2="21" y2="6"/>
+    <line x1="3" y1="12" x2="21" y2="12"/>
+    <line x1="3" y1="18" x2="21" y2="18"/>
+  </svg>
+</button>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-head">
+    <div class="sb-logo">
+      <svg viewBox="0 0 15 15" fill="none">
+        <rect x="1" y="1" width="5" height="5" rx="1" fill="currentColor" opacity=".9"/>
+        <rect x="9" y="1" width="5" height="5" rx="1" fill="currentColor" opacity=".4"/>
+        <rect x="1" y="9" width="5" height="5" rx="1" fill="currentColor" opacity=".4"/>
+        <rect x="9" y="9" width="5" height="5" rx="1" fill="currentColor" opacity=".9"/>
+      </svg>
+    </div>
+    <div>
+      <div class="sb-title">Banner Tracker</div>
+      <div class="sb-sub">Internal asset log</div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <button class="sb-item active" id="nav-dashboard" onclick="switchView('dashboard')">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect x="1" y="1" width="6" height="6" rx="1"/>
+        <rect x="9" y="1" width="6" height="6" rx="1"/>
+        <rect x="1" y="9" width="6" height="6" rx="1"/>
+        <rect x="9" y="9" width="6" height="6" rx="1"/>
+      </svg>
+      Dashboard
+    </button>
+    <button class="sb-item" id="nav-telegram" onclick="switchView('telegram')">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M14 2L1 6.5l5 1.5m8-6l-5 9-3-4m8-5L6 8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Telegram Manager
+      <span class="sb-badge">NEW</span>
+    </button>
+  </nav>
+
+  <div class="sidebar-section" id="sb-filters">
+    <span class="sb-lbl">Status</span>
+    <button class="sb-filter on" data-vis="live" onclick="setSidebarVis('live')">
+      <svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill="#10b981"/></svg>
+      Live
+      <span class="sb-count" id="sb-count-live">—</span>
+    </button>
+    <button class="sb-filter" data-vis="deleted" onclick="setSidebarVis('deleted')">
+      <svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill="#ef4444"/></svg>
+      Deleted
+      <span class="sb-count" id="sb-count-del">—</span>
+    </button>
+
+    <span class="sb-lbl" style="margin-top:18px">Brand</span>
+    <button class="sb-filter on" data-brand="all" onclick="setSidebarBrand('all')">
+      <svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+      All brands
+    </button>
+    <div id="sb-brand-list"></div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="sb-pulse-row">
+      <div class="pulse"></div>
+      <span>Live · auto-refresh 8s</span>
+    </div>
+  </div>
+</aside>
+
+<div class="sb-overlay" id="sb-overlay" onclick="closeSidebar()"></div>
+
+<div id="lb" onclick="closeLb(event)">
+  <button id="lb-close" onclick="hideLb()">
+    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+      <path d="M1 1l12 12M13 1L1 13"/>
+    </svg>
+  </button>
+  <img id="lb-img" src="" alt=""/>
+</div>
+
+<div id="modal-overlay" onclick="closeModalOut(event)">
+  <div class="modal">
+    <div class="modal-icon">
+      <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+        <path d="M3 5h12M7 5V3h4v2M6 5l.5 9M12 5l-.5 9M9 5v9"/>
+      </svg>
+    </div>
+    <h3>Delete entry?</h3>
+    <p id="modal-desc">This will mark the entry as deleted.</p>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-confirm-del" id="modal-confirm">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+<div class="wrap">
+
+<!-- DASHBOARD VIEW -->
+<div class="view active" id="view-dashboard">
+<div class="page-header">
+  <div>
+    <div class="page-title">Banner Archive</div>
+    <div class="page-sub" id="ec">Loading…</div>
+  </div>
+  <div class="hdr-actions">
+    <button class="btn-ghost" onclick="loadData()">
+      <svg viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+        <path d="M11 6.5A4.5 4.5 0 1 1 8.5 2.2"/><path d="M8.5 1v2.5H11"/>
+      </svg>
+      Refresh
+    </button>
+    <span id="sync-time" style="font-size:.67rem;color:var(--text-3);">—</span>
+  </div>
+</div>
+
+<div class="stats">
+  <div class="stat">
+    <div class="stat-lbl">
+      <svg viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.3">
+        <rect x="1" y="1" width="3.5" height="3.5" rx=".6"/>
+        <rect x="6.5" y="1" width="3.5" height="3.5" rx=".6"/>
+        <rect x="1" y="6.5" width="3.5" height="3.5" rx=".6"/>
+        <rect x="6.5" y="6.5" width="3.5" height="3.5" rx=".6"/>
+      </svg>Total uploads
+    </div>
+    <div class="stat-n" id="s-total">—</div>
+    <div class="stat-sub" id="s-groups">—</div>
+  </div>
+  <div class="stat">
+    <div class="stat-lbl">
+      <svg viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.3">
+        <circle cx="5.5" cy="5.5" r="4"/><path d="M5.5 3v2.5l1.4 1.4" stroke-linecap="round"/>
+      </svg>Last 24 h
+    </div>
+    <div class="stat-n" id="s-recent">—</div>
+    <div class="stat-sub">uploads</div>
+  </div>
+  <div class="stat">
+    <div class="stat-lbl">
+      <svg viewBox="0 0 11 11" fill="none" stroke="currentColor" stroke-width="1.3">
+        <path d="M1 8.5l2-2.5 2 1.5 2.5-3.5L10 7" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>Last activity
+    </div>
+    <div class="stat-n" id="s-last-promo" style="font-size:.9rem;padding-top:5px;letter-spacing:-.01em;">—</div>
+    <div class="stat-sub" id="s-last-meta"></div>
+  </div>
+</div>
+
+<div class="toolbar">
+  <span class="toolbar-lbl">Brand</span>
+  <div id="brand-filters" style="display:flex;gap:5px;flex-wrap:wrap;"></div>
+  <div class="sep"></div>
+  <button class="pill on" data-vis="live" id="vis-live">Live</button>
+  <button class="pill"    data-vis="deleted" id="vis-del">Deleted</button>
+  <div class="sp"></div>
+  <div class="search-wrap">
+    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5">
+      <circle cx="5" cy="5" r="3.5"/><path d="M8 8L11 11" stroke-linecap="round"/>
+    </svg>
+    <input id="search" type="text" placeholder="Search…" autocomplete="off"/>
+  </div>
+</div>
+
+<div class="card">
+  <table>
+    <thead>
+      <tr>
+        <th class="xc"></th>
+        <th data-col="brand">Brand <span class="si">↕</span></th>
+        <th data-col="promo">Promo <span class="si">↕</span></th>
+        <th data-col="version">Ver <span class="si">↕</span></th>
+        <th>File</th>
+        <th data-col="timestamp">Updated <span class="si">↕</span></th>
+        <th data-col="user">User <span class="si">↕</span></th>
+        <th>Preview</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="tbody">
+      <tr><td colspan="9"><div class="empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+          <rect x="3" y="3" width="18" height="18" rx="3"/>
+          <path d="M8 12h8M8 8h5M8 16h6" stroke-linecap="round"/>
+        </svg>
+        <div>Loading…</div>
+      </div></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<footer>
+  <div id="ec-foot">—</div>
+  <div id="sync-time-foot">—</div>
+</footer>
+</div><!-- /view-dashboard -->
+
+
+<!-- TELEGRAM MANAGER VIEW -->
+<div class="view" id="view-telegram">
+<div class="page-header">
+  <div>
+    <div class="page-title">Telegram Manager</div>
+    <div class="page-sub">Manage sending groups, receiving channels, brand→topic routing</div>
+  </div>
+  <div class="hdr-actions">
+    <span id="save-status"></span>
+    <button class="btn-ghost" onclick="loadTgConfig()">
+      <svg viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+        <path d="M11 6.5A4.5 4.5 0 1 1 8.5 2.2"/><path d="M8.5 1v2.5H11"/>
+      </svg>
+      Reload Config
+    </button>
+    <button class="btn-accent" id="save-config-btn" onclick="saveTgConfig({})">
+      <svg viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+        <path d="M1 7l4 4 7-8"/>
+      </svg>
+      Save Config
+    </button>
+  </div>
+</div>
+
+<div class="tg-grid">
+  <div class="tg-panel">
+    <div class="tg-panel-head">
+      <div class="tg-panel-title">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M14 2L1 6.5l5 1.5m8-6l-5 9-3-4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Sending Groups
+      </div>
+      <button class="btn-ghost" onclick="showAddForm('sending')">+ Add</button>
+    </div>
+    <div class="tg-panel-body">
+      <div id="sending-list"><div class="empty" style="padding:24px 0"><div>Loading…</div></div></div>
+      <div class="add-form" id="add-form-sending">
+        <div class="add-form-title">Add Sending Group</div>
+        <div class="form-group">
+          <label class="form-label">Name</label>
+          <input class="form-input" id="af-s-name" placeholder="Main Archive"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Group ID</label>
+          <input class="form-input" id="af-s-gid" placeholder="-100123456789"/>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <button class="btn-accent" onclick="addSendingGroup()" style="flex:1">Add Group</button>
+          <button class="btn-ghost" onclick="hideAddForm('sending')">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tg-panel">
+    <div class="tg-panel-head">
+      <div class="tg-panel-title">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M1 5h14M5 1v4M11 1v4M1 9l4 4 4-4 4 4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Receiving Groups
+      </div>
+      <button class="btn-ghost" onclick="showAddForm('receiving')">+ Add</button>
+    </div>
+    <div class="tg-panel-body">
+      <div id="receiving-list"><div class="empty" style="padding:24px 0"><div>Loading…</div></div></div>
+      <div class="add-form" id="add-form-receiving">
+        <div class="add-form-title">Add Receiving Group</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Name</label>
+            <input class="form-input" id="af-r-name" placeholder="Tracker"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Topic ID (optional)</label>
+            <input class="form-input" id="af-r-tid" placeholder="1"/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Group ID</label>
+          <input class="form-input" id="af-r-gid" placeholder="-100123456789"/>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <button class="btn-accent" onclick="addReceivingGroup()" style="flex:1">Add Group</button>
+          <button class="btn-ghost" onclick="hideAddForm('receiving')">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tg-panel" style="margin-bottom:16px;animation:fadeUp .3s ease .08s both">
+  <div class="tg-panel-head">
+    <div class="tg-panel-title">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M3 8h10M9 4l4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Test Send
+    </div>
+  </div>
+  <div class="tg-panel-body">
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Group ID</label>
+        <input class="form-input" id="test-gid" placeholder="-100123456789"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Topic ID (optional)</label>
+        <input class="form-input" id="test-tid" placeholder="7"/>
+      </div>
+    </div>
+    <button id="test-send-btn" class="btn-accent" onclick="testSend()" style="width:100%">
+      Send Test Message
+    </button>
+    <div class="test-result" id="test-result"></div>
+  </div>
+</div>
+
+<div class="tg-full-panel">
+  <div class="tg-panel-head">
+    <div class="tg-panel-title">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="4" cy="8" r="2.5"/>
+        <circle cx="12" cy="4" r="2.5"/>
+        <circle cx="12" cy="12" r="2.5"/>
+        <path d="M6.5 7l3.3-2M6.5 9l3.3 2" stroke-linecap="round"/>
+      </svg>
+      Brand → Topic Routing
+    </div>
+    <span style="font-size:.68rem;color:var(--text-3);">Active sending group assignments</span>
+  </div>
+  <div class="tg-panel-body">
+    <div id="topic-routing-table">Loading…</div>
+  </div>
+</div>
+
+</div><!-- /view-telegram -->
+</div><!-- /wrap -->
+</div><!-- /main -->
+
+
+<script>
+// ══════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════
+let all         = [];
+let tgConfig    = null;
+let filterBrand = 'all';
+let filterVis   = 'live';
+let sortCol     = 'timestamp';
+let sortDir     = -1;
+const expanded  = new Set();
+let pendingDeleteId = null;
+
+// AUTO-SAVE STATE
+let saveTimer      = null;
+let isSavingConfig = false;
+
+const BRANDS = [
+  "crickex","mostplay","darazplay","kv8","sbj66","superbaji",
+  "jeetway","heybaji","betjili","betvisa","jeetwin","betjdb",
+  "jeetbangla","heyvip","luckyworld","123ga","bn88"
+];
+
+const BRAND_COLORS = {
+  crickex:'#3b82f6',mostplay:'#ec4899',darazplay:'#f97316',kv8:'#a855f7',
+  sbj66:'#06b6d4',superbaji:'#22c55e',jeetway:'#eab308',heybaji:'#14b8a6',
+  betjili:'#fb923c',betvisa:'#8b5cf6',jeetwin:'#10b981',betjdb:'#6366f1',
+  jeetbangla:'#d946ef',heyvip:'#f43f5e',luckyworld:'#0ea5e9','123ga':'#84cc16',bn88:'#22c55e'
+};
+
+// ══════════════════════════════════════════════
+//  VIEW SWITCH
+// ══════════════════════════════════════════════
+function switchView(v) {
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.getElementById('view-' + v).classList.add('active');
+  document.querySelectorAll('.sb-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('nav-' + v).classList.add('active');
+  document.getElementById('sb-filters').style.display = v === 'dashboard' ? '' : 'none';
+  if (v === 'telegram') loadTgConfig();
+  closeSidebar();
+}
+
+// ══════════════════════════════════════════════
+//  SIDEBAR
+// ══════════════════════════════════════════════
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  sb.classList.contains('open') ? closeSidebar() : openSidebar();
+}
+function openSidebar() {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sb-overlay').classList.add('show');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sb-overlay').classList.remove('show');
+}
+
+function setSidebarVis(vis) {
+  filterVis = vis;
+  document.querySelectorAll('[data-vis]').forEach(x => x.classList.remove('on'));
+  document.querySelectorAll(`[data-vis="${vis}"]`).forEach(x => x.classList.add('on'));
+  render();
+}
+
+function setSidebarBrand(brand) {
+  filterBrand = brand;
+  renderBrandFilters();
+  render();
+}
+
+function renderSidebarBrands() {
+  const live = all.filter(e => e.status !== 'deleted');
+  const counts = {};
+  for (const e of live) counts[e.brand] = (counts[e.brand] || 0) + 1;
+  let html = '';
+  BRANDS.forEach(b => {
+    const c = counts[b] || 0;
+    const col = BRAND_COLORS[b] || '#888';
+    html += `<button class="sb-filter${filterBrand===b?' on':''}" data-brand="${b}" onclick="setSidebarBrand('${b}')">
+      <span class="dot" style="background:${col};width:6px;height:6px;border-radius:50%;flex-shrink:0;display:inline-block"></span>
+      ${b.charAt(0).toUpperCase()+b.slice(1)}
+      <span class="sb-count">${c||''}</span>
+    </button>`;
+  });
+  document.getElementById('sb-brand-list').innerHTML = html;
+  document.getElementById('sb-count-live').textContent = all.filter(e=>e.status!=='deleted').length;
+  document.getElementById('sb-count-del').textContent  = all.filter(e=>e.status==='deleted').length;
+}
+
+// ══════════════════════════════════════════════
+//  BRAND FILTER BAR
+// ══════════════════════════════════════════════
+function renderBrandFilters() {
+  let html = `<button class="pill${filterBrand==='all'?' on':''}" data-brand="all">All</button>`;
+  BRANDS.forEach(b => {
+    html += `<button class="pill${filterBrand===b?' on':''}" data-brand="${b}">${b.charAt(0).toUpperCase()+b.slice(1)}</button>`;
+  });
+  const wrap = document.getElementById('brand-filters');
+  wrap.innerHTML = html;
+  wrap.querySelectorAll('[data-brand]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterBrand = btn.dataset.brand;
+      renderBrandFilters();
+      renderSidebarBrands();
+      render();
+    });
+  });
+}
+
+// ══════════════════════════════════════════════
+//  DATA LOAD
+// ══════════════════════════════════════════════
+async function loadData() {
+  try {
+    const r = await fetch('/data?' + Date.now());
+    if (!r.ok) throw new Error('HTTP '+r.status);
+    all = (await r.json()).entries || [];
+  } catch {
+    try {
+      const r2 = await fetch('data.json?' + Date.now());
+      all = (await r2.json()).entries || [];
+    } catch { showErr(); return; }
+  }
+  updateStats();
+  renderBrandFilters();
+  renderSidebarBrands();
+  render();
+  const t = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById('sync-time').textContent = 'Synced ' + t;
+  document.getElementById('sync-time-foot').textContent = 'Synced ' + t;
+}
+
+function showErr() {
+  document.getElementById('tbody').innerHTML = `
+    <tr><td colspan="9"><div class="empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+        <circle cx="12" cy="12" r="9"/>
+        <path d="M12 8v5M12 16h.01" stroke-linecap="round"/>
+      </svg>
+      <div>Cannot load data — run <code>python bot.py</code></div>
+    </div></td></tr>`;
+}
+
+// ══════════════════════════════════════════════
+//  GROUPING & FILTERING
+// ══════════════════════════════════════════════
+function makeGroups(entries) {
+  const map = {};
+  for (const e of entries) {
+    const k = e.brand + '§' + e.promo;
+    if (!map[k]) map[k] = { latest: e, all: [] };
+    map[k].all.push(e);
+    if (e.timestamp > map[k].latest.timestamp) map[k].latest = e;
+  }
+  for (const g of Object.values(map)) g.all.sort((a,b) => b.version - a.version);
+  return Object.values(map);
+}
+
+function getFiltered() {
+  const q = document.getElementById('search').value.toLowerCase().trim();
+  return all.filter(e => {
+    const isDead = e.status === 'deleted';
+    if (filterVis === 'live'    &&  isDead) return false;
+    if (filterVis === 'deleted' && !isDead) return false;
+    if (filterBrand !== 'all' && e.brand !== filterBrand) return false;
+    if (q && !( e.promo.toLowerCase().includes(q) ||
+                e.brand.toLowerCase().includes(q) ||
+                (e.user||'').toLowerCase().includes(q) )) return false;
+    return true;
+  });
+}
+
+function getSortedGroups() {
+  const gs = makeGroups(getFiltered());
+  gs.sort((a,b) => {
+    let va = a.latest[sortCol] ?? '';
+    let vb = b.latest[sortCol] ?? '';
+    if (sortCol === 'version') { va = +va; vb = +vb; }
+    return va < vb ? sortDir : va > vb ? -sortDir : 0;
+  });
+  return gs;
+}
+
+// ══════════════════════════════════════════════
+//  TIME HELPERS
+// ══════════════════════════════════════════════
+function rel(ts) {
+  const d = Date.now() - new Date(ts).getTime();
+  const m = Math.floor(d / 60000);
+  if (m < 1)  return 'just now';
+  if (m < 60) return m + 'm ago';
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + 'h ago';
+  return Math.floor(h/24) + 'd ago';
+}
+function isFresh(ts) { return Date.now() - new Date(ts).getTime() < 6 * 3600000; }
+function cutoff24()  { return new Date(Date.now() - 86400000).toISOString().slice(0,19).replace('T',' '); }
+
+// ══════════════════════════════════════════════
+//  STATS
+// ══════════════════════════════════════════════
+function updateStats() {
+  const live   = all.filter(e => e.status !== 'deleted');
+  const gs     = makeGroups(live);
+  const recent = live.filter(e => e.timestamp >= cutoff24()).length;
+  const la     = [...live].sort((a,b) => b.timestamp.localeCompare(a.timestamp))[0];
+  document.getElementById('s-total').textContent  = live.length;
+  document.getElementById('s-groups').textContent = gs.length + ' unique banners';
+  document.getElementById('s-recent').textContent = recent;
+  if (la) {
+    document.getElementById('s-last-promo').textContent = la.promo;
+    document.getElementById('s-last-meta').textContent  =
+      la.brand.toUpperCase() + '  ·  ' + rel(la.timestamp) + '  ·  @' + (la.user || '');
+  }
+}
+
+// ══════════════════════════════════════════════
+//  RENDER TABLE
+// ══════════════════════════════════════════════
+function render() {
+  const gs = getSortedGroups();
+  const f  = getFiltered();
+  const ecText = f.length + ' entr' + (f.length===1?'y':'ies') + '  ·  ' + gs.length + ' banners';
+  document.getElementById('ec').textContent = ecText;
+  document.getElementById('ec-foot').textContent = ecText;
+  const tb = document.getElementById('tbody');
+  if (!gs.length) {
+    tb.innerHTML = `<tr><td colspan="9"><div class="empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+        <path d="M3 12h18M3 6h18M3 18h18" stroke-linecap="round"/>
+      </svg><div>No results.</div></div></td></tr>`;
+    return;
+  }
+  let h = '';
+  gs.forEach((g, i) => {
+    const lat    = g.latest;
+    const gid    = 'g' + i;
+    const isOpen = expanded.has(gid);
+    const multi  = g.all.length > 1;
+    const dead   = lat.status === 'deleted';
+    const fresh  = !dead && isFresh(lat.timestamp);
+    const ft     = resolveFileType(lat);
+    const col    = BRAND_COLORS[lat.brand] || '#888';
+
+    h += `<tr class="gr${fresh?' fresh':''}${dead?' dead':''}${isOpen?' open':''}" data-gid="${gid}" onclick="toggle('${gid}')">
+      <td class="xc">
+        <div class="chev">
+          <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            ${multi ? '<path d="M3 1.5L7 5l-4 3.5"/>' : '<path d="M4 5h2" stroke-opacity=".25"/>'}
+          </svg>
+        </div>
+      </td>
+      <td>
+        <div style="display:flex;align-items:center;gap:7px;">
+          <span class="chip"><span class="dot" style="background:${col}"></span>${esc(lat.brand.toUpperCase())}</span>
+          ${dead ? '<span class="tag del-tag">deleted</span>' : ''}
+        </div>
+      </td>
+      <td><span class="pname">${esc(lat.promo)}</span></td>
+      <td><span class="ver">v${lat.version}</span></td>
+      <td><span class="file-badge ${ft}">${ft.toUpperCase()}</span></td>
+      <td><span class="tv${fresh?' fresh-t':''}${dead?' dead-t':''}">${rel(lat.timestamp)}</span></td>
+      <td><span class="uv">${esc(lat.user||'')}</span></td>
+      <td>${prevCell(lat, true)}</td>
+      <td><div class="acts">${actionBtns(lat)}</div></td>
+    </tr>`;
+
+    if (multi) {
+      h += `<tbody class="hs${isOpen?' open':''}" id="hs-${gid}">`;
+      g.all.slice(1).forEach(e => {
+        const eft = resolveFileType(e);
+        h += `<tr class="hr">
+          <td></td>
+          <td><div class="h-indent">
+            <span class="ver">v${e.version}</span>
+            ${e.status==='replaced'?'<span class="tag rep-tag">replaced</span>':''}
+            ${e.status==='deleted' ?'<span class="tag del-tag">deleted</span>':''}
+          </div></td>
+          <td colspan="2" style="color:var(--text-2);font-size:.73rem;">${esc(e.promo)}</td>
+          <td><span class="file-badge ${eft}">${eft.toUpperCase()}</span></td>
+          <td><span class="tv">${rel(e.timestamp)}</span></td>
+          <td><span class="uv">${esc(e.user||'')}</span></td>
+          <td>${prevCell(e, false)}</td>
+          <td><div class="acts">${historyBtns(e)}</div></td>
+        </tr>`;
+      });
+      h += '</tbody>';
+    }
+  });
+  tb.innerHTML = h;
+}
+
+// PATCH: stricter resolveFileType
+function resolveFileType(e) {
+  const ft = (e.file_type || '').toLowerCase().trim();
+  if (['image', 'video', 'audio', 'document'].includes(ft)) return ft;
+  if (e.preview_url) {
+    const urlPath = e.preview_url.split('?')[0];
+    const ext     = urlPath.split('.').pop().toLowerCase();
+    if (ext && ext.length <= 5) {
+      if (['png','jpg','jpeg','webp','gif'].includes(ext))                               return 'image';
+      if (['mp4','avi','mov','mkv','webm','flv','m4v'].includes(ext))                    return 'video';
+      if (['mp3','wav','aac','flac','ogg','m4a'].includes(ext))                          return 'audio';
+      if (['pdf','doc','docx','xls','xlsx','ppt','pptx','txt','zip','rar'].includes(ext)) return 'document';
+    }
+  }
+  if (e.is_image) return 'image';
+  return 'other';
+}
+
+function prevCell(e, allowLb) {
+  if (e.preview_url && resolveFileType(e) === 'image') {
+    const click = allowLb
+      ? `onclick="event.stopPropagation();openLb('${esc(e.preview_url)}')" style="cursor:zoom-in;"`
+      : `onclick="event.stopPropagation();"`;
+    return `<a class="prev-wrap img" ${click}>
+      <img src="${esc(e.preview_url)}" alt="preview" loading="lazy"
+           onerror="this.parentElement.innerHTML='<svg viewBox=\\'0 0 16 16\\' fill=\\'none\\' stroke=\\'currentColor\\' stroke-width=\\'1.3\\'><path d=\\'M2 12l3.5-4.5 2.5 2.5L11.5 5 14 12H2z\\'/><circle cx=\\'5.5\\' cy=\\'5.5\\' r=\\'1.2\\'/></svg>'"/>
+    </a>`;
+  }
+  const ft = resolveFileType(e);
+  const icons = {
+    video:    '<path d="M4 3l9 5-9 5V3z" fill="currentColor" opacity=".5"/>',
+    audio:    '<circle cx="8" cy="8" r="3"/><path d="M8 5V2M8 14v-3M5 8H2M14 8h-3"/>',
+    document: '<rect x="3" y="2" width="10" height="12" rx="1.5"/><path d="M6 6h5M6 9h5M6 12h3" stroke-linecap="round"/>',
+    other:    '<rect x="2" y="2" width="12" height="12" rx="1.5"/><path d="M5 8.5h6M5 6h3M5 11h4" stroke-linecap="round"/>',
+    image:    '<path d="M2 12l3.5-4.5 2.5 2.5L11.5 5 14 12H2z"/><circle cx="5.5" cy="5.5" r="1.2"/>',
+  };
+  return `<div class="prev-wrap">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3">${icons[ft]||icons.other}</svg>
+  </div>`;
+}
+
+function actionBtns(e) {
+  const btns = [];
+  if (e.link) {
+    btns.push(`<a class="a-btn" href="${esc(e.link)}" target="_blank" rel="noopener"
+       onclick="event.stopPropagation()" data-tip="View in Telegram">
+      <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M1 6s2-3.5 5-3.5S11 6 11 6s-2 3.5-5 3.5S1 6 1 6z"/>
+        <circle cx="6" cy="6" r="1.5"/>
+      </svg></a>`);
+  }
+  if (e.preview_url) {
+    btns.push(`<a class="a-btn dl" href="${esc(e.preview_url)}" download
+       onclick="event.stopPropagation()" data-tip="Download">
+      <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+        <path d="M6 1v7M3.5 5.5L6 8l2.5-2.5"/>
+        <path d="M1.5 10.5h9"/>
+      </svg></a>`);
+  }
+  if (e.status !== 'deleted') {
+    btns.push(`<button class="a-btn danger" onclick="event.stopPropagation();confirmDelete('${e.id}','${esc(e.brand+' | '+e.promo)}')"
+       data-tip="Delete">
+      <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+        <path d="M2 2l8 8M10 2l-8 8"/>
+      </svg></button>`);
+  }
+  return btns.join('');
+}
+
+function historyBtns(e) {
+  const btns = [];
+  if (e.link) {
+    btns.push(`<a class="a-btn" href="${esc(e.link)}" target="_blank" rel="noopener"
+       onclick="event.stopPropagation()" data-tip="View">
+      <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M1 6s2-3.5 5-3.5S11 6 11 6s-2 3.5-5 3.5S1 6 1 6z"/>
+        <circle cx="6" cy="6" r="1.5"/>
+      </svg></a>`);
+  }
+  if (e.preview_url) {
+    btns.push(`<a class="a-btn dl" href="${esc(e.preview_url)}" download
+       onclick="event.stopPropagation()" data-tip="Download">
+      <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+        <path d="M6 1v7M3.5 5.5L6 8l2.5-2.5"/><path d="M1.5 10.5h9"/>
+      </svg></a>`);
+  }
+  return btns.join('');
+}
+
+function toggle(gid) {
+  const hs  = document.getElementById('hs-' + gid);
+  const row = document.querySelector(`[data-gid="${gid}"]`);
+  if (!hs || !row) return;
+  if (expanded.has(gid)) {
+    expanded.delete(gid);
+    row.classList.remove('open');
+    const rows = hs.querySelectorAll('.hr');
+    rows.forEach(r => r.classList.add('row-out'));
+    setTimeout(() => {
+      hs.classList.remove('open');
+      rows.forEach(r => r.classList.remove('row-out'));
+    }, 160);
+  } else {
+    expanded.add(gid);
+    row.classList.add('open');
+    hs.classList.add('open');
+  }
+}
+
+// ══════════════════════════════════════════════
+//  DELETE
+// ══════════════════════════════════════════════
+function confirmDelete(id, label) {
+  pendingDeleteId = id;
+  document.getElementById('modal-desc').textContent =
+    `Delete "${label}"? This marks the entry as deleted in the archive.`;
+  document.getElementById('modal-overlay').classList.add('show');
+  document.getElementById('modal-confirm').onclick = () => doDelete(id);
+}
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('show');
+  pendingDeleteId = null;
+}
+function closeModalOut(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+}
+async function doDelete(id) {
+  closeModal();
+  try {
+    const r = await fetch('/api/entries/' + id, { method: 'DELETE' });
+    if (r.ok) { await loadData(); }
+  } catch {
+    all = all.map(e => e.id === id ? {...e, status:'deleted'} : e);
+    updateStats(); render();
+  }
+}
+
+// ══════════════════════════════════════════════
+//  LIGHTBOX
+// ══════════════════════════════════════════════
+function openLb(url) {
+  document.getElementById('lb-img').src = url;
+  document.getElementById('lb').classList.add('show');
+}
+function hideLb() {
+  document.getElementById('lb').classList.remove('show');
+  document.getElementById('lb-img').src = '';
+}
+function closeLb(e) { if (e.target === document.getElementById('lb')) hideLb(); }
+document.addEventListener('keydown', e => { if (e.key==='Escape') { hideLb(); closeModal(); } });
+
+// ══════════════════════════════════════════════
+//  ESCAPE
+// ══════════════════════════════════════════════
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ══════════════════════════════════════════════
+//  EVENTS
+// ══════════════════════════════════════════════
+document.getElementById('search').addEventListener('input', render);
+document.querySelectorAll('thead th[data-col]').forEach(th => {
+  th.addEventListener('click', () => {
+    const c = th.dataset.col;
+    if (sortCol === c) sortDir *= -1;
+    else { sortCol = c; sortDir = -1; }
+    document.querySelectorAll('.si').forEach(i => i.textContent = '↕');
+    const si = th.querySelector('.si');
+    if (si) si.textContent = sortDir === -1 ? '↓' : '↑';
+    render();
+  });
+});
+
+// ══════════════════════════════════════════════
+//  DEBOUNCED SAVE
+// ══════════════════════════════════════════════
+function debouncedSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => saveTgConfig({ auto: true, silentSuccess: false }), 700);
+}
+
+// ══════════════════════════════════════════════
+//  SAVE STATUS INDICATOR
+// ══════════════════════════════════════════════
+function setSaveStatus(state) {
+  const el = document.getElementById('save-status');
+  if (!el) return;
+  const map = {
+    idle:   { text: '',            color: 'var(--text-3)' },
+    saving: { text: 'Saving…',     color: 'var(--text-3)' },
+    saved:  { text: 'Saved ✓',     color: 'var(--green)'  },
+    error:  { text: 'Save failed', color: 'var(--red)'    },
+  };
+  const s = map[state] || map.idle;
+  el.textContent = s.text;
+  el.style.color  = s.color;
+}
+
+// ══════════════════════════════════════════════
+//  FIELD ERROR HELPERS
+// ══════════════════════════════════════════════
+function clearFieldError(input) {
+  if (!input) return;
+  input.style.borderColor = '';
+  const err = input.parentElement && input.parentElement.querySelector('.field-error');
+  if (err) err.remove();
+}
+
+function showFieldError(input, message) {
+  if (!input) { showToast(message, 'err'); return; }
+  input.style.borderColor = 'var(--red)';
+  let err = input.parentElement && input.parentElement.querySelector('.field-error');
+  if (!err) {
+    err = document.createElement('div');
+    err.className = 'field-error';
+    input.parentElement.appendChild(err);
+  }
+  err.textContent = message;
+}
+
+// ══════════════════════════════════════════════
+//  GENERIC INLINE EDITOR
+// ══════════════════════════════════════════════
+function replaceWithInlineInput(targetEl, initialValue, options = {}) {
+  const { validate = null, transform = v => v, onSave = null, onCancel = null, placeholder = '', inputStyle = '' } = options;
+  const oldText = String(initialValue ?? '');
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'form-input';
+  input.value = oldText;
+  input.placeholder = placeholder;
+  input.style.cssText = `width:100%;font-size:.74rem;padding:4px 8px;${inputStyle}`;
+  let done = false;
+
+  function commit() {
+    if (done) return;
+    const raw = input.value.trim();
+    if (validate) {
+      const errMsg = validate(raw);
+      if (errMsg) { showFieldError(input, errMsg); input.focus(); return; }
+    }
+    done = true;
+    if (onSave) onSave(transform(raw), raw);
+  }
+  function restore() {
+    if (done) return;
+    done = true;
+    if (onCancel) onCancel(oldText); else renderTgConfig();
+  }
+
+  input.addEventListener('blur',    () => setTimeout(commit, 100));
+  input.addEventListener('keydown', e  => {
+    if (e.key === 'Enter')  { e.preventDefault(); commit(); }
+    if (e.key === 'Escape') { done = true; restore(); }
+  });
+
+  targetEl.innerHTML = '';
+  targetEl.appendChild(input);
+  setTimeout(() => { input.focus(); input.select(); }, 0);
+}
+
+// ══════════════════════════════════════════════
+//  SENDING GROUP EDITORS
+// ══════════════════════════════════════════════
+function editSendingGroupName(i, e) {
+  e && e.stopPropagation();
+  if (!tgConfig || !tgConfig.sending_groups[i]) return;
+  const el = document.getElementById(`sg-name-${i}`);
+  if (!el) return;
+  replaceWithInlineInput(el, tgConfig.sending_groups[i].name, {
+    placeholder: 'Group name',
+    validate: v => v ? null : 'Name cannot be empty',
+    onSave: val => { tgConfig.sending_groups[i].name = val; renderTgConfig(); debouncedSave(); showToast('Auto-saved', 'ok'); },
+    onCancel: () => renderTgConfig(),
+  });
+}
+
+function editSendingGroupId(i, e) {
+  e && e.stopPropagation();
+  if (!tgConfig || !tgConfig.sending_groups[i]) return;
+  const el = document.getElementById(`sg-id-${i}`);
+  if (!el) return;
+  replaceWithInlineInput(el, tgConfig.sending_groups[i].group_id, {
+    placeholder: '-100123456789',
+    validate: v => /^-?\d+$/.test(v) ? null : 'Must be a valid integer (e.g. -100123456789)',
+    transform: v => parseInt(v, 10),
+    onSave: val => { tgConfig.sending_groups[i].group_id = val; renderTgConfig(); debouncedSave(); showToast('Auto-saved', 'ok'); },
+    onCancel: () => renderTgConfig(),
+  });
+}
+
+// ══════════════════════════════════════════════
+//  RECEIVING GROUP EDITORS
+// ══════════════════════════════════════════════
+function editReceivingGroupName(i, e) {
+  e && e.stopPropagation();
+  if (!tgConfig || !tgConfig.receiving_groups[i]) return;
+  const el = document.getElementById(`rg-name-${i}`);
+  if (!el) return;
+  replaceWithInlineInput(el, tgConfig.receiving_groups[i].name, {
+    placeholder: 'Group name',
+    validate: v => v ? null : 'Name cannot be empty',
+    onSave: val => { tgConfig.receiving_groups[i].name = val; renderTgConfig(); debouncedSave(); showToast('Auto-saved', 'ok'); },
+    onCancel: () => renderTgConfig(),
+  });
+}
+
+function editReceivingGroupId(i, e) {
+  e && e.stopPropagation();
+  if (!tgConfig || !tgConfig.receiving_groups[i]) return;
+  const el = document.getElementById(`rg-id-${i}`);
+  if (!el) return;
+  replaceWithInlineInput(el, tgConfig.receiving_groups[i].group_id, {
+    placeholder: '-100123456789',
+    validate: v => /^-?\d+$/.test(v) ? null : 'Must be a valid integer',
+    transform: v => parseInt(v, 10),
+    onSave: val => { tgConfig.receiving_groups[i].group_id = val; renderTgConfig(); debouncedSave(); showToast('Auto-saved', 'ok'); },
+    onCancel: () => renderTgConfig(),
+  });
+}
+
+function editReceivingTopic(i, e) {
+  e && e.stopPropagation();
+  if (!tgConfig || !tgConfig.receiving_groups[i]) return;
+  const el = document.getElementById(`rg-topic-${i}`);
+  if (!el) return;
+  const current = tgConfig.receiving_groups[i].topic_id;
+  replaceWithInlineInput(el, current ?? '', {
+    placeholder: 'Topic ID (optional)',
+    validate: v => (!v || /^\d+$/.test(v)) ? null : 'Must be a positive integer or blank',
+    transform: v => v ? parseInt(v, 10) : null,
+    onSave: val => { tgConfig.receiving_groups[i].topic_id = val; renderTgConfig(); debouncedSave(); showToast('Auto-saved', 'ok'); },
+    onCancel: () => renderTgConfig(),
+  });
+}
+
+// ══════════════════════════════════════════════
+//  PRIORITY REORDER
+// ══════════════════════════════════════════════
+function moveSendingGroupUp(i) {
+  if (!tgConfig || i <= 0) return;
+  [tgConfig.sending_groups[i - 1], tgConfig.sending_groups[i]] =
+    [tgConfig.sending_groups[i], tgConfig.sending_groups[i - 1]];
+  renderTgConfig(); debouncedSave(); showToast('Priority updated', 'ok');
+}
+
+function moveSendingGroupDown(i) {
+  if (!tgConfig || i >= tgConfig.sending_groups.length - 1) return;
+  [tgConfig.sending_groups[i + 1], tgConfig.sending_groups[i]] =
+    [tgConfig.sending_groups[i], tgConfig.sending_groups[i + 1]];
+  renderTgConfig(); debouncedSave(); showToast('Priority updated', 'ok');
+}
+
+// ══════════════════════════════════════════════
+//  BRAND → TOPIC ROUTING
+// ══════════════════════════════════════════════
+function getBrandRoutingRows() {
+  if (!tgConfig) return [];
+  return BRANDS.map(brand => {
+    let foundGroupId = null, foundTopicId = null;
+    for (const sg of tgConfig.sending_groups) {
+      if (sg.topics && brand in sg.topics) {
+        foundGroupId = sg.id; foundTopicId = sg.topics[brand]; break;
+      }
+    }
+    return { brand, groupId: foundGroupId, topicId: foundTopicId };
+  });
+}
+
+function updateBrandRouting(brand, newGroupId, newTopicIdRaw) {
+  if (!tgConfig) return;
+  const newTopicId = (newTopicIdRaw !== '' && newTopicIdRaw !== null && newTopicIdRaw !== undefined)
+    ? parseInt(String(newTopicIdRaw), 10) : null;
+  for (const sg of tgConfig.sending_groups) { if (sg.topics) delete sg.topics[brand]; }
+  if (newGroupId && newTopicId !== null && !isNaN(newTopicId)) {
+    const sg = tgConfig.sending_groups.find(g => g.id === newGroupId);
+    if (sg) { if (!sg.topics) sg.topics = {}; sg.topics[brand] = newTopicId; }
+  }
+  debouncedSave(); renderTgConfig(); showToast('Routing updated', 'ok');
+}
+
+function updateBrandRoutingFromRow(brand) {
+  const topicInput  = document.querySelector(`.topic-route-input[data-brand="${brand}"]`);
+  const groupSelect = document.querySelector(`.group-route-select[data-brand="${brand}"]`);
+  updateBrandRouting(
+    brand,
+    groupSelect ? groupSelect.value || null : null,
+    topicInput  ? topicInput.value          : ''
+  );
+}
+
+// ══════════════════════════════════════════════
+//  TELEGRAM MANAGER
+// ══════════════════════════════════════════════
+async function loadTgConfig() {
+  try {
+    const r = await fetch('/api/telegram-config?' + Date.now());
+    if (!r.ok) throw new Error();
+    tgConfig = await r.json();
+  } catch {
+    tgConfig = { sending_groups: [], receiving_groups: [] };
+  }
+  renderTgConfig();
+}
+
+function renderTgConfig() {
+  if (!tgConfig) return;
+  const sgCount = tgConfig.sending_groups.length;
+
+  // Sending Groups
+  const sendWrap = document.getElementById('sending-list');
+  if (!sgCount) {
+    sendWrap.innerHTML = '<div class="empty" style="padding:20px 0;font-size:.75rem;">No sending groups configured.</div>';
+  } else {
+    const hint = '<div style="font-size:.63rem;color:var(--text-3);margin-bottom:10px;">Groups are checked top→bottom — #1 has highest priority. Double-click name or ID to edit.</div>';
+    sendWrap.innerHTML = hint + tgConfig.sending_groups.map((g, i) => `
+      <div class="tg-group-item${g.active===false?' inactive':''}">
+        <div class="tg-priority-col">
+          <span class="priority-badge">#${i+1}</span>
+          <div class="priority-btns">
+            <button class="prio-btn" onclick="moveSendingGroupUp(${i})" ${i===0?'disabled':''}>▲</button>
+            <button class="prio-btn" onclick="moveSendingGroupDown(${i})" ${i===sgCount-1?'disabled':''}>▼</button>
+          </div>
+        </div>
+        <div class="tg-group-info" style="flex:1;min-width:0;">
+          <div class="tg-group-name" id="sg-name-${i}" ondblclick="editSendingGroupName(${i},event)" title="Double-click to edit" style="cursor:text">${esc(g.name||'Unnamed')}</div>
+          <div class="tg-group-id"   id="sg-id-${i}"   ondblclick="editSendingGroupId(${i},event)"   title="Double-click to edit ID" style="cursor:text">${esc(String(g.group_id||''))}</div>
+        </div>
+        <div class="tg-group-actions">
+          <label class="toggle-sw" title="${g.active===false?'Enable':'Disable'}">
+            <input type="checkbox" ${g.active!==false?'checked':''} onchange="toggleSendingGroup(${i},this.checked)"/>
+            <span class="toggle-slider"></span>
+          </label>
+          <button class="a-btn danger" onclick="removeSendingGroup(${i})" data-tip="Remove">
+            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 2l8 8M10 2l-8 8"/></svg>
+          </button>
+        </div>
+      </div>`).join('');
+  }
+
+  // Receiving Groups
+  const recvWrap = document.getElementById('receiving-list');
+  if (!tgConfig.receiving_groups.length) {
+    recvWrap.innerHTML = '<div class="empty" style="padding:20px 0;font-size:.75rem;">No receiving groups configured.</div>';
+  } else {
+    recvWrap.innerHTML = tgConfig.receiving_groups.map((g, i) => {
+      const topicLabel = g.topic_id != null ? `topic ${g.topic_id}` : 'no topic';
+      return `
+        <div class="tg-group-item${g.active===false?' inactive':''}">
+          <div class="tg-group-info" style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+              <span class="tg-group-name" id="rg-name-${i}" ondblclick="editReceivingGroupName(${i},event)" title="Double-click to edit" style="cursor:text">${esc(g.name||'Unnamed')}</span>
+              <span class="tag rep-tag"   id="rg-topic-${i}" ondblclick="editReceivingTopic(${i},event)"      title="Double-click to edit topic" style="cursor:text">${topicLabel}</span>
+            </div>
+            <div class="tg-group-id" id="rg-id-${i}" ondblclick="editReceivingGroupId(${i},event)" title="Double-click to edit ID" style="cursor:text">${esc(String(g.group_id||''))}</div>
+          </div>
+          <div class="tg-group-actions">
+            <label class="toggle-sw">
+              <input type="checkbox" ${g.active!==false?'checked':''} onchange="toggleReceivingGroup(${i},this.checked)"/>
+              <span class="toggle-slider"></span>
+            </label>
+            <button class="a-btn danger" onclick="removeReceivingGroup(${i})" data-tip="Remove">
+              <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 2l8 8M10 2l-8 8"/></svg>
+            </button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // Brand → Topic Routing (editable)
+  const routeWrap = document.getElementById('topic-routing-table');
+  if (!sgCount) {
+    routeWrap.innerHTML = '<div style="color:var(--text-3);font-size:.78rem;padding:8px 0;">No sending groups configured.</div>';
+    return;
+  }
+  const rows = getBrandRoutingRows();
+  let html = `
+    <div style="font-size:.63rem;color:var(--text-3);margin-bottom:10px;">
+      Select a sending group and enter a topic ID per brand. Changes auto-save.
+    </div>
+    <table class="topics-table">
+      <thead><tr><th>Brand</th><th>Topic ID</th><th>Sending Group</th></tr></thead>
+      <tbody>`;
+  for (const row of rows) {
+    const col      = BRAND_COLORS[row.brand] || '#888';
+    const topicVal = row.topicId != null ? row.topicId : '';
+    const grpVal   = row.groupId || '';
+    html += `<tr>
+      <td><span class="chip"><span class="dot" style="background:${col}"></span>${esc(row.brand.toUpperCase())}</span></td>
+      <td>
+        <input type="number" min="1" class="form-input topic-route-input" data-brand="${esc(row.brand)}"
+          value="${topicVal}" placeholder="—"
+          style="width:82px;padding:3px 7px;font-size:.72rem;"
+          onchange="updateBrandRoutingFromRow('${esc(row.brand)}')"/>
+      </td>
+      <td>
+        <select class="form-input group-route-select" data-brand="${esc(row.brand)}"
+          style="width:155px;padding:3px 7px;font-size:.72rem;"
+          onchange="updateBrandRoutingFromRow('${esc(row.brand)}')">
+          <option value="">— Unassigned —</option>
+          ${tgConfig.sending_groups.map(sg =>
+            `<option value="${esc(sg.id)}"${sg.id===grpVal?' selected':''}>${esc(sg.name||sg.id)}</option>`
+          ).join('')}
+        </select>
+      </td>
+    </tr>`;
+  }
+  html += '</tbody></table>';
+  routeWrap.innerHTML = html;
+}
+
+function toggleSendingGroup(i, active) {
+  if (!tgConfig) return;
+  tgConfig.sending_groups[i].active = active;
+  debouncedSave();
+  showToast('Auto-saved', 'ok');
+}
+
+function toggleReceivingGroup(i, active) {
+  if (!tgConfig) return;
+  tgConfig.receiving_groups[i].active = active;
+  debouncedSave();
+  showToast('Auto-saved', 'ok');
+}
+
+function removeSendingGroup(i) {
+  if (!tgConfig) return;
+  tgConfig.sending_groups.splice(i, 1);
+  renderTgConfig(); debouncedSave(); showToast('Group removed', 'ok');
+}
+
+function removeReceivingGroup(i) {
+  if (!tgConfig) return;
+  tgConfig.receiving_groups.splice(i, 1);
+  renderTgConfig(); debouncedSave(); showToast('Group removed', 'ok');
+}
+
+function showAddForm(type) {
+  document.getElementById('add-form-' + type).classList.add('show');
+}
+function hideAddForm(type) {
+  document.getElementById('add-form-' + type).classList.remove('show');
+}
+
+function addSendingGroup() {
+  const nameInput = document.getElementById('af-s-name');
+  const gidInput  = document.getElementById('af-s-gid');
+  clearFieldError(nameInput); clearFieldError(gidInput);
+  const name = nameInput.value.trim(), gidRaw = gidInput.value.trim();
+  let err = false;
+  if (!name)                          { showFieldError(nameInput, 'Name is required'); err = true; }
+  if (!gidRaw)                        { showFieldError(gidInput, 'Group ID is required'); err = true; }
+  else if (!/^-?\d+$/.test(gidRaw))  { showFieldError(gidInput, 'Must be a valid integer'); err = true; }
+  if (err) return;
+  const group_id = parseInt(gidRaw, 10);
+  if (!tgConfig) tgConfig = { sending_groups: [], receiving_groups: [] };
+  tgConfig.sending_groups.push({ id: 'sg_' + Date.now(), name, group_id, topics: {}, active: true });
+  nameInput.value = ''; gidInput.value = '';
+  hideAddForm('sending');
+  renderTgConfig(); debouncedSave(); showToast('Group added', 'ok');
+}
+
+function addReceivingGroup() {
+  const nameInput = document.getElementById('af-r-name');
+  const gidInput  = document.getElementById('af-r-gid');
+  const tidInput  = document.getElementById('af-r-tid');
+  clearFieldError(nameInput); clearFieldError(gidInput); clearFieldError(tidInput);
+  const name = nameInput.value.trim(), gidRaw = gidInput.value.trim(), tidRaw = tidInput.value.trim();
+  let err = false;
+  if (!name)                            { showFieldError(nameInput, 'Name is required'); err = true; }
+  if (!gidRaw)                          { showFieldError(gidInput, 'Group ID is required'); err = true; }
+  else if (!/^-?\d+$/.test(gidRaw))    { showFieldError(gidInput, 'Must be a valid integer'); err = true; }
+  if (tidRaw && !/^\d+$/.test(tidRaw)) { showFieldError(tidInput, 'Must be a positive integer or blank'); err = true; }
+  if (err) return;
+  const group_id = parseInt(gidRaw, 10);
+  const topic_id = tidRaw ? parseInt(tidRaw, 10) : null;
+  if (!tgConfig) tgConfig = { sending_groups: [], receiving_groups: [] };
+  tgConfig.receiving_groups.push({ id: 'rg_' + Date.now(), name, group_id, topic_id, active: true });
+  nameInput.value = ''; gidInput.value = ''; tidInput.value = '';
+  hideAddForm('receiving');
+  renderTgConfig(); debouncedSave(); showToast('Group added', 'ok');
+}
+
+async function saveTgConfig(options = {}) {
+  const { silentSuccess = false, auto = false } = options;
+  if (!tgConfig) return;
+  if (isSavingConfig) return;
+  isSavingConfig = true;
+  setSaveStatus('saving');
+  try {
+    const r   = await fetch('/api/telegram-config', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(tgConfig),
+    });
+    const res = await r.json();
+    if (res.ok) {
+      setSaveStatus('saved');
+      if (!silentSuccess) showToast(auto ? 'Auto-saved ✓' : 'Config saved ✓', 'ok');
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    } else {
+      setSaveStatus('error');
+      showToast('Save failed: ' + (res.error || 'Unknown error'), 'err');
+    }
+  } catch {
+    setSaveStatus('error');
+    showToast('Cannot reach server — save failed', 'err');
+  } finally {
+    isSavingConfig = false;
+  }
+}
+
+async function testSend() {
+  const btn      = document.getElementById('test-send-btn');
+  const gidInput = document.getElementById('test-gid');
+  const tidInput = document.getElementById('test-tid');
+  clearFieldError(gidInput); clearFieldError(tidInput);
+  const gidRaw = gidInput.value.trim(), tidRaw = tidInput.value.trim();
+  let err = false;
+  if (!gidRaw)                          { showFieldError(gidInput, 'Group ID is required'); err = true; }
+  else if (!/^-?\d+$/.test(gidRaw))    { showFieldError(gidInput, 'Must be a valid integer'); err = true; }
+  if (tidRaw && !/^\d+$/.test(tidRaw)) { showFieldError(tidInput, 'Must be a positive integer or blank'); err = true; }
+  if (err) return;
+
+  btn.disabled = true;
+  const origHTML = btn.innerHTML;
+  btn.innerHTML = 'Sending…';
+  const res = document.getElementById('test-result');
+  res.style.display = 'none';
+  try {
+    const r    = await fetch('/api/telegram-config/test', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ group_id: parseInt(gidRaw, 10), topic_id: tidRaw ? parseInt(tidRaw, 10) : null }),
+    });
+    const data = await r.json();
+    res.style.display = 'block';
+    if (data.ok) { res.className = 'test-result ok'; res.textContent = '✓ Message sent successfully'; }
+    else         { res.className = 'test-result err'; res.textContent = '✗ ' + (data.error || 'Send failed'); }
+  } catch {
+    res.style.display = 'block';
+    res.className = 'test-result err'; res.textContent = '✗ Cannot reach server';
+  } finally {
+    btn.disabled = false; btn.innerHTML = origHTML;
+  }
+}
+
+// ── TOAST ─────────────────────────────────────
+function showToast(msg, type) {
+  let t = document.getElementById('toast');
+  if (!t) {
+    t = document.createElement('div'); t.id = 'toast';
+    t.style.cssText = `position:fixed;bottom:24px;right:24px;z-index:2000;
+      padding:10px 18px;border-radius:8px;font-size:.78rem;font-weight:500;
+      border:1px solid;animation:fadeUp .2s ease;transition:opacity .3s;`;
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  if (type === 'ok') {
+    t.style.background = 'var(--green-bg)'; t.style.borderColor = 'rgba(16,185,129,.3)'; t.style.color = 'var(--green)';
+  } else {
+    t.style.background = 'var(--red-bg)'; t.style.borderColor = 'rgba(239,68,68,.3)'; t.style.color = 'var(--red)';
+  }
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.style.opacity = '0'; }, 2500);
+}
+
+function toggleWallpaper(enable) {
+  document.body.classList.toggle('no-wallpaper', !enable);
+}
+
+// ══════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════
+loadData();
+setInterval(loadData, 8000);
+toggleWallpaper(true);
+
+// PARTICLE SYSTEM
+const canvas = document.getElementById('particles');
+const ctx = canvas.getContext('2d');
+let particles = [];
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+for (let i = 0; i < 140; i++) {
+  particles.push({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    r: Math.random() * 2 + 0.5,
+    speedY: Math.random() * 1.2 + 0.4,
+    speedX: (Math.random() - 0.5) * 0.3,
+    opacity: Math.random() * 0.6 + 0.3
+  });
+}
+
+function animate() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  particles.forEach(p => {
+    p.y += p.speedY;
+    p.x += p.speedX;
+    p.x += Math.sin(p.y * 0.01) * 0.6;
+    if (p.y > canvas.height) { p.y = -10; p.x = Math.random() * canvas.width; }
+    ctx.fillStyle = `rgba(255,255,255,${p.opacity})`;
+ctx.fillRect(p.x, p.y, p.r, p.r);
+  });
+  requestAnimationFrame(animate);
+}
+animate();
+</script>
+</body>
+</html>
