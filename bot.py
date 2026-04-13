@@ -613,7 +613,7 @@ def main():
     print(f"Dashboard → http://localhost:{PORT}  |  LAN: http://{ip}:{PORT}")
     print("Ctrl+C to stop.\n")
     try:
-    while True:
+        while True:
         result = get_updates()
 
         if result.get("ok"):
